@@ -40,7 +40,7 @@ export function ConfirmationModal({
   onCancel,
   loading,
 }: Props) {
-  const action = pendingAction as PendingAction;
+  const action = pendingAction as unknown as PendingAction;
 
   const { isConnected } = useAccount();
   const { switchChainAsync } = useSwitchChain();
