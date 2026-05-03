@@ -18,6 +18,24 @@ const SUGGESTIONS = [
   `Repay 5 USDC on Aave for 0x8ed7af7d0B09B693a81f38947B9Df15c2f008296`,
 ];
 
+function parseAgentResponse(raw: string) {
+  const actionMatch = raw.match(/\[ACTION\]([\s\S]*?)\[\/ACTION\]/);
+
+  let cleanText = raw;
+  let action: Record<string, unknown> | null = null;
+
+  if (actionMatch) {
+    try {
+      action = JSON.parse(actionMatch[1]);
+      cleanText = raw.replace(/\[ACTION\][\s\S]*?\[\/ACTION\]/, "").trim();
+    } catch {
+      action = null;
+    }
+  }
+
+  return { cleanText, action };
+}
+
 export default function Home() {
   const { address } = useAccount();
 
@@ -51,14 +69,21 @@ export default function Home() {
     setLoading(true);
 
     try {
-      const res: ChatResponse = await sendMessage(message, sessionId);
-      setSessionId(res.session_id);
-      setMessages((prev) => [...prev, { role: "assistant", content: res.reply }]);
+      const res: ChatResponse = await sendMessage(message, sessionId ?? "default");
+      setSessionId(res.session_id ?? sessionId ?? "default");
 
-      if (res.awaiting_confirmation && res.pending_action) {
+      const parsed = parseAgentResponse(res.response);
+
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: parsed.cleanText },
+      ]);
+
+      if (parsed.action) {
         setAwaiting(true);
-        setPending(res.pending_action);
+        setPending(parsed.action);
       }
+
     } catch (e) {
       setMessages((prev) => [
         ...prev,
@@ -69,19 +94,38 @@ export default function Home() {
     }
   }
 
-  async function handleConfirm(reply: "yes" | "no") {
-    if (!sessionId) return;
+  async function handleConfirm(txHash?: string) {
+    const sid = sessionId ?? "default";
+  
     setConfirmLoading(true);
-
+  
     try {
-      const res = await confirmAction(sessionId, reply);
-      setMessages((prev) => [...prev, { role: "assistant", content: res.reply }]);
+      const res = await confirmAction(sid, "yes", txHash);
+  
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: res.response },
+      ]);
+  
+      const refresh = await sendMessage(
+        "Check my updated Aave position",
+        sid
+      );
+  
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Updated Aave position:\n\n" + refresh.response,
+        },
+      ]);
     } catch (e) {
       setMessages((prev) => [
         ...prev,
         { role: "assistant", content: `Error: ${(e as Error).message}` },
       ]);
     } finally {
+      setSessionId(sid);
       setAwaiting(false);
       setPending(null);
       setConfirmLoading(false);
@@ -129,7 +173,7 @@ export default function Home() {
               className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm whitespace-pre-wrap leading-relaxed ${
+                className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm whitespace-pre-wrap break-words leading-relaxed ${
                   m.role === "user"
                     ? "bg-blue-600 text-white rounded-br-sm"
                     : "bg-gray-800 text-gray-200 rounded-bl-sm"
@@ -180,11 +224,14 @@ export default function Home() {
       {awaiting && pendingAction && (
         <ConfirmationModal
           pendingAction={pendingAction}
-          onConfirm={() => handleConfirm("yes")}
-          onCancel={() => handleConfirm("no")}
+          onConfirm={(hash) => handleConfirm(hash)}
+          onCancel={() => {
+            setAwaiting(false);
+            setPending(null);
+          }}
           loading={confirmLoading}
-        />
-      )}
+      />
+    )}
     </div>
   );
 }
