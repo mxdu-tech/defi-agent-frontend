@@ -119,7 +119,15 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 
 **Backend Repository**: [defi-portfolio-agent](https://github.com/mxdu-tech/defi-portfolio-agent)
 
-**Live Demo**: https://defi-agent.mxdu.me
+## 🌐 Live Demo
+
+- Primary Demo (Stable):
+
+  👉 https://defi-agent.mxdu.me
+
+- System Architecture Version:
+
+  👉 https://portfolio-agent.defi.mxdu.me
 
 ---
 

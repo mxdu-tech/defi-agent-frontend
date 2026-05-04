@@ -119,7 +119,15 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 
 **后端仓库**: [defi-portfolio-agent](https://github.com/mxdu-tech/defi-portfolio-agent)
 
-**在线演示**: https://defi-agent.mxdu.me
+## 🌐 在线演示
+
+- 稳定演示入口（推荐）  
+
+  👉 https://defi-agent.mxdu.me
+
+- 架构版本入口  
+
+  👉 https://portfolio-agent.defi.mxdu.me
 
 ---
 
